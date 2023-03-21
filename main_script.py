@@ -1,14 +1,10 @@
 import obspython as obs
-import generate_txt_file, os.path
+import os.path
 from steam_achievements import SteamAchievements
 
+
 DEFAULT_OUTPUT_TEMPLATE = ("Currently Playing: #current_game#\n"
-                           "Game  Completion : #current_game_completion#\n\n"
-                           "Steam Completion : #steam_completion#\n"
-                           "Real  Completion : #real_completion#\n"
-                           "Completed Games  : #completed_games#\n\n"
-                           "Highest Ranked   :\n"
-                           "#highest_ranked_games#")
+                           "Game  Completion : #current_game_completion#\n")
 
 api_key = ""
 steam_id = ""
@@ -26,12 +22,15 @@ def clear_cache(props, prop):
 def script():
     global api_key, steam_id, update_when_playing, output_template, amount_of_games, width_of_games
 
-    if api_key !=  "" and steam_id != "":
+    if api_key != "" and steam_id != "":
         steam_achieve = SteamAchievements(api_key, steam_id)
         current_game = steam_achieve.current_game
         if not update_when_playing or (update_when_playing and current_game != None):
             steam_achieve.get_steam_achievements()
-            generate_txt_file.generate_txt_file(steam_achieve.stats, current_game, output_template, amount_of_games, width_of_games)
+            steam_achieve.generate_result(output_template)
+        obs.timer_remove(script)
+        obs.remove_current_callback()
+        obs.timer_add(script, time*60000)
     else:
         obs.timer_remove(script)
         obs.remove_current_callback()
@@ -44,7 +43,7 @@ def script_description():
     return """<center><h2>Steam achievements board</h2></center>
               <p>This script allows you to display your steam achievements and some calculated values in your stream.</p>
               <p>Available tags for output template:</p>
-              <p>#current_game#, #current_game_completion#, #steam_completion#, #real_completion#, #completed_games#, #highest_ranked_games#</p>"""
+              <p>#current_game#, #current_game_completion#</p>"""
 
 # Called to set default values of data settings
 def script_defaults(settings):
@@ -75,6 +74,7 @@ def script_update(settings):
     global api_key, steam_id, update_when_playing, time, amount_of_games, width_of_games, output_template
 
     obs.timer_remove(script)
+    obs.remove_current_callback()
 
     api_key = obs.obs_data_get_string(settings, "api_key")
     steam_id = obs.obs_data_get_string(settings, "steam_id")
